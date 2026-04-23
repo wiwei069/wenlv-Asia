@@ -3,438 +3,692 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>亚洲文旅项目智能搜索引擎 & 信息加工平台</title>
+    <title>亚洲文旅智搜 - 文旅项目智能搜索与研判平台</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
-        body { font-family: 'Noto Sans SC', system-ui, sans-serif; }
-        .platform-header { background: linear-gradient(90deg, #1e3a8a, #3b82f6); }
-        .result-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .result-card:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); }
-        .copy-btn { transition: all 0.2s; }
-        .copy-btn:hover { transform: scale(1.05); }
-        .notebook-btn { animation: pulse 2s infinite; }
+        :root { --bg: #080c14; --bg-elevated: #0f1520; --card: #141d2e; --card-hover: #1a2540; --border: #1e2d4a; --accent: #d4a24e; --accent-glow: rgba(212,162,78,0.3); --accent2: #2dd4a8; --accent2-glow: rgba(45,212,168,0.2); --fg: #e8eaf0; --fg-muted: #7a8ba8; --danger: #ef4444; --warning: #f59e0b; --success: #22c55e; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Noto Sans SC', sans-serif; background: var(--bg); color: var(--fg); min-height: 100vh; overflow-x: hidden; }
+        h1, h2, h3, .serif { font-family: 'Noto Serif SC', serif; }
+        .grid-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-image: linear-gradient(rgba(30,45,74,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(30,45,74,0.3) 1px, transparent 1px); background-size: 60px 60px; }
+        .grid-bg::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%, rgba(212,162,78,0.06) 0%, transparent 60%), radial-gradient(ellipse at 80% 80%, rgba(45,212,168,0.04) 0%, transparent 40%); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+        .search-glow { box-shadow: 0 0 0 1px var(--border), 0 0 40px var(--accent-glow); transition: box-shadow 0.4s; }
+        .search-glow:focus-within { box-shadow: 0 0 0 2px var(--accent), 0 0 60px var(--accent-glow), 0 0 120px rgba(212,162,78,0.1); }
+        @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.6; } 100% { transform: scale(1.8); opacity: 0; } }
+        .pulse-ring::before, .pulse-ring::after { content: ''; position: absolute; inset: -8px; border: 2px solid var(--accent); border-radius: inherit; animation: pulse-ring 2s ease-out infinite; }
+        .pulse-ring::after { animation-delay: 1s; }
+        @keyframes crawl { 0% { width: 0; } 100% { width: 100%; } }
+        .crawl-bar { animation: crawl var(--duration, 2s) ease-out forwards; }
+        @keyframes countUp { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; transform: translateY(-2px); } }
+        .count-anim { animation: countUp 0.3s ease; }
+        .project-card { transition: all 0.3s ease; border: 1px solid var(--border); }
+        .project-card:hover { border-color: var(--accent); box-shadow: 0 0 30px var(--accent-glow), 0 8px 32px rgba(0,0,0,0.4); transform: translateY(-4px); }
+        .tag { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 500; }
+        .tab-btn { padding: 10px 20px; border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.3s; color: var(--fg-muted); font-size: 14px; white-space: nowrap; }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .tab-btn:hover:not(.active) { color: var(--fg); }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; animation: fadeSlide 0.3s ease; }
+        @keyframes fadeSlide { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .modal-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay.show { display: flex; }
+        .modal-content { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 16px; max-width: 1000px; width: 100%; max-height: 85vh; overflow-y: auto; animation: modalIn 0.3s ease; }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        .toast-container { position: fixed; top: 80px; right: 20px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
+        .toast { padding: 12px 20px; border-radius: 10px; font-size: 14px; color: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.4); animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards; display: flex; align-items: center; gap: 8px; }
+        .toast.success { background: linear-gradient(135deg, #065f46, #047857); border: 1px solid #10b981; }
+        .toast.info { background: linear-gradient(135deg, #1e3a5f, #1e40af); border: 1px solid #3b82f6; }
+        .toast.warning { background: linear-gradient(135deg, #78350f, #92400e); border: 1px solid #f59e0b; }
+        @keyframes toastIn { from { opacity: 0; transform: translateX(60px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateX(60px); } }
+        .crawl-node { animation: nodePulse 1.5s infinite; }
+        @keyframes nodePulse { 0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow); } 50% { box-shadow: 0 0 0 8px transparent; } }
+        .report-block { background: var(--card); border-left: 3px solid var(--accent); padding: 16px 20px; margin: 12px 0; border-radius: 0 8px 8px 0; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+        .status-dot.online { background: var(--success); animation: blink 1.5s infinite; }
+        .status-dot.crawling { background: var(--warning); animation: blink 0.6s infinite; }
+        .status-dot.offline { background: var(--fg-muted); }
+        .particle { position: absolute; width: 3px; height: 3px; background: var(--accent); border-radius: 50%; pointer-events: none; opacity: 0; animation: floatParticle var(--dur, 6s) var(--delay, 0s) infinite; }
+        @keyframes floatParticle { 0% { opacity: 0; transform: translateY(0) scale(0); } 20% { opacity: 0.6; transform: translateY(-20px) scale(1); } 80% { opacity: 0.3; transform: translateY(-80px) scale(0.6); } 100% { opacity: 0; transform: translateY(-120px) scale(0); } }
+        .source-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; }
+        .source-badge:hover { transform: scale(1.05); }
+        .source-badge.active { border-color: currentColor; }
+        .source-xhs { background: rgba(255,44,85,0.15); color: #ff2d55; }
+        .source-wechat { background: rgba(7,193,96,0.15); color: #07c160; }
+        .source-douyin { background: rgba(37,244,238,0.15); color: #25f4ee; }
+        .source-web { background: rgba(59,130,246,0.15); color: #3b82f6; }
+        .source-weibo { background: rgba(230,36,41,0.15); color: #e62429; }
+        .source-bilibili { background: rgba(0,161,214,0.15); color: #00a1d6; }
+        .highlight-match { background: rgba(212,162,78,0.25); color: var(--accent); padding: 0 2px; border-radius: 2px; }
+        @media (max-width: 768px) { .hero-title { font-size: 2rem !important; } .search-box { width: 95% !important; } .modal-content { max-height: 90vh; } }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
     </style>
 </head>
-<body class="bg-gray-50">
-    <!-- 顶部导航栏 -->
-    <div class="platform-header text-white py-6 shadow-lg">
-        <div class="max-w-7xl mx-auto px-8 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <i class="fa-solid fa-mountain-sun text-4xl"></i>
+<body>
+    <div class="grid-bg"></div>
+    <div id="particles" style="position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;"></div>
+    <div class="toast-container" id="toastContainer"></div>
+    <nav style="position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(8,12,20,0.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);">
+        <div style="max-width:1400px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div style="width:36px;height:36px;background:linear-gradient(135deg,var(--accent),#e8c878);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;color:#080c14;" class="serif">亚</div>
                 <div>
-                    <h1 class="text-3xl font-bold tracking-tight">亚洲文旅项目平台</h1>
-                    <p class="text-blue-100 text-sm">搜索引擎 · 爬虫采集 · 智能分析 · NotebookLM 一键导出</p>
+                    <div style="font-size:16px;font-weight:700;letter-spacing:1px;" class="serif">亚洲文旅智搜</div>
+                    <div style="font-size:10px;color:var(--fg-muted);letter-spacing:2px;">ASIA CULTURAL TOURISM INTELLIGENCE</div>
                 </div>
             </div>
-            <div class="flex items-center gap-6">
-                <!-- NotebookLM 官方入口 -->
-                <a href="https://notebooklm.google.com/" target="_blank" 
-                   class="notebook-btn flex items-center gap-2 bg-white text-blue-600 px-6 py-3 rounded-2xl font-semibold shadow-inner hover:shadow-xl">
-                    <i class="fa-solid fa-book-open"></i>
-                    <span>立即进入 NotebookLM</span>
-                    <span class="text-xs bg-yellow-300 text-black px-2 py-0.5 rounded-full font-bold">GOOGLE</span>
+            <div style="display:flex;align-items:center;gap:16px;">
+                <a href="https://notebooklm.google.com/" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;padding:8px 16px;background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:13px;font-weight:600;text-decoration:none;cursor:pointer;transition:all 0.3s;" onmouseover="this.style.background='linear-gradient(135deg,var(--accent),#e8c878)';this.style.color='#080c14'" onmouseout="this.style.background='linear-gradient(135deg,#1a1a2e,#16213e)';this.style.color='var(--accent)'" id="notebooklmLink" aria-label="打开 NotebookLM">
+                    <i class="fab fa-google"></i> <span>NotebookLM</span> <i class="fas fa-external-link-alt" style="font-size:10px;"></i>
                 </a>
-                
-                <div class="flex items-center gap-2 text-sm">
-                    <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                    <span>爬虫系统在线</span>
+                <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--fg-muted);">
+                    <span class="status-dot online"></span> <span>引擎在线</span>
                 </div>
-                
-                <button onclick="showHelp()" 
-                        class="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-5 py-2 rounded-2xl text-sm font-medium">
-                    <i class="fa-solid fa-circle-question"></i>
-                    使用指南
-                </button>
             </div>
         </div>
-    </div>
-
-    <div class="max-w-7xl mx-auto px-8 py-8">
-        <!-- 搜索区域 -->
-        <div class="bg-white rounded-3xl shadow-xl p-8 mb-10">
-            <div class="flex flex-col md:flex-row gap-6 items-end">
-                <div class="flex-1">
-                    <label class="block text-sm font-semibold text-gray-600 mb-2">🔍 输入关键词（支持项目名称、区位、投资商、关键词组合）</label>
-                    <input id="keywordInput" 
-                           type="text" 
-                           placeholder="例如：泰国普吉岛文旅综合体 / 海南三亚亚特兰蒂斯 / 投资商：万达" 
-                           class="w-full px-6 py-5 text-lg border-2 border-gray-200 focus:border-blue-500 rounded-2xl outline-none transition-colors">
-                </div>
-                <button onclick="startSearch()" 
-                        class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-12 py-5 rounded-2xl text-xl font-semibold flex items-center gap-3 shadow-lg">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                    开始搜索 & 爬取
-                </button>
+    </nav>
+    <main id="mainContent" style="position:relative;z-index:1;">
+        <section id="heroSection" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px 40px;transition:all 0.5s ease;">
+            <div style="text-align:center;margin-bottom:48px;">
+                <div style="font-size:14px;color:var(--accent);letter-spacing:6px;margin-bottom:16px;font-weight:500;">CULTURAL TOURISM INTELLIGENCE PLATFORM</div>
+                <h1 class="serif hero-title" style="font-size:3.5rem;font-weight:900;line-height:1.2;margin-bottom:16px;">
+                    <span style="color:var(--fg);">亚洲文旅</span><span style="color:var(--accent);">智搜</span>
+                </h1>
+                <p style="font-size:18px;color:var(--fg-muted);max-width:600px;margin:0 auto;line-height:1.8;">
+                    聚合全网数据源，智能搜索亚洲文旅项目全维度信息<br>
+                    从投资策划到运营数据，一键搜索 · 综合研判 · 报告生成
+                </p>
             </div>
-            
-            <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div class="flex items-center gap-2 bg-gray-100 px-4 py-3 rounded-2xl">
-                    <i class="fa-solid fa-globe text-blue-500"></i>
-                    <span>全网网站</span>
-                </div>
-                <div class="flex items-center gap-2 bg-gray-100 px-4 py-3 rounded-2xl">
-                    <i class="fa-solid fa-book text-red-500"></i>
-                    <span>小红书笔记</span>
-                </div>
-                <div class="flex items-center gap-2 bg-gray-100 px-4 py-3 rounded-2xl">
-                    <i class="fa-solid fa-weixin text-green-500"></i>
-                    <span>微信公众号</span>
-                </div>
-                <div class="flex items-center gap-2 bg-gray-100 px-4 py-3 rounded-2xl">
-                    <i class="fa-solid fa-video text-pink-500"></i>
-                    <span>抖音 / TikTok</span>
-                </div>
-            </div>
-            <p class="text-xs text-gray-400 mt-3 text-center">已启用分布式爬虫引擎 • 实时抓取 12 个主流平台 • 反爬虫绕过机制已激活</p>
-        </div>
-
-        <!-- 搜索结果区域（默认隐藏） -->
-        <div id="resultsSection" class="hidden">
-            
-            <!-- 实时爬虫日志 -->
-            <div class="mb-8 bg-white border border-gray-200 rounded-3xl p-6">
-                <h2 class="font-semibold text-lg mb-4 flex items-center gap-2">
-                    <i class="fa-solid fa-spinner fa-spin text-blue-500"></i>
-                    爬虫实时日志
-                </h2>
-                <div id="crawlLog" class="font-mono text-xs bg-gray-900 text-green-400 p-4 rounded-2xl h-48 overflow-y-auto leading-relaxed"></div>
-            </div>
-
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold">搜索结果：<span id="resultKeyword" class="text-blue-600"></span></h2>
-                <div class="flex gap-3">
-                    <button onclick="exportAllToMarkdown()" 
-                            class="flex items-center gap-2 px-6 py-3 bg-white border border-gray-300 rounded-2xl hover:bg-gray-50 text-sm font-medium">
-                        <i class="fa-solid fa-file-export"></i>
-                        导出 Markdown
-                    </button>
-                    <button onclick="copyAllToClipboard()" 
-                            class="copy-btn flex items-center gap-2 px-8 py-3 bg-emerald-600 text-white rounded-2xl hover:bg-emerald-700 text-sm font-semibold">
-                        <i class="fa-solid fa-copy"></i>
-                        一键复制全部信息
+            <div class="search-glow" style="width:min(700px,90%);background:var(--card);border-radius:16px;padding:6px;position:relative;" id="searchBox">
+                <div style="display:flex;align-items:center;">
+                    <i class="fas fa-search" style="padding:0 16px;color:var(--accent);font-size:18px;"></i>
+                    <input type="text" id="searchInput" placeholder="输入文旅项目名称、区位、投资商等关键词..." style="flex:1;background:none;border:none;outline:none;color:var(--fg);font-size:16px;padding:14px 0;font-family:inherit;" aria-label="搜索关键词" autocomplete="off">
+                    <button onclick="startSearch()" id="searchBtn" style="padding:14px 28px;background:linear-gradient(135deg,var(--accent),#e8c878);color:#080c14;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.3s;font-family:inherit;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+                        智能搜索
                     </button>
                 </div>
             </div>
-
-            <!-- Tab 导航 -->
-            <div class="flex border-b mb-8">
-                <button onclick="switchTab(0)" id="tab0" class="tab-button active px-8 py-4 font-semibold border-b-2 border-blue-600 text-blue-600">📍 项目区位</button>
-                <button onclick="switchTab(1)" id="tab1" class="tab-button px-8 py-4 font-semibold text-gray-600 hover:text-gray-900">💰 投资商</button>
-                <button onclick="switchTab(2)" id="tab2" class="tab-button px-8 py-4 font-semibold text-gray-600 hover:text-gray-900">🗺️ 策划规划</button>
-                <button onclick="switchTab(3)" id="tab3" class="tab-button px-8 py-4 font-semibold text-gray-600 hover:text-gray-900">🏗️ 设计建设</button>
-                <button onclick="switchTab(4)" id="tab4" class="tab-button px-8 py-4 font-semibold text-gray-600 hover:text-gray-900">📈 运营数据</button>
-                <button onclick="switchTab(5)" id="tab5" class="tab-button px-8 py-4 font-semibold text-gray-600 hover:text-gray-900">📱 社交舆情</button>
+            <div style="margin-top:24px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:700px;" id="sourceSelector">
+                <span class="source-badge source-xhs active" data-source="xiaohongshu" onclick="toggleSource(this)"> <i class="fas fa-book-open"></i> 小红书 </span>
+                <span class="source-badge source-wechat active" data-source="wechat" onclick="toggleSource(this)"> <i class="fab fa-weixin"></i> 微信公众号 </span>
+                <span class="source-badge source-douyin active" data-source="douyin" onclick="toggleSource(this)"> <i class="fab fa-tiktok"></i> 抖音 </span>
+                <span class="source-badge source-web active" data-source="website" onclick="toggleSource(this)"> <i class="fas fa-globe"></i> 网站 </span>
+                <span class="source-badge source-weibo active" data-source="weibo" onclick="toggleSource(this)"> <i class="fab fa-weibo"></i> 微博 </span>
+                <span class="source-badge source-bilibili active" data-source="bilibili" onclick="toggleSource(this)"> <i class="fas fa-play-circle"></i> B 站 </span>
             </div>
-
-            <!-- Tab 内容 -->
-            <div id="tabContent" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <!-- 由 JS 动态填充 -->
+            <div style="margin-top:32px;text-align:center;">
+                <div style="font-size:12px;color:var(--fg-muted);margin-bottom:12px;">热门搜索</div>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;" id="hotTags">
+                    <span class="tag" style="background:var(--card);color:var(--fg);" onclick="quickSearch('迪士尼')">迪士尼</span>
+                    <span class="tag" style="background:var(--card);color:var(--fg);" onclick="quickSearch('环球影城')">环球影城</span>
+                    <span class="tag" style="background:var(--card);color:var(--fg);" onclick="quickSearch('长隆')">长隆</span>
+                    <span class="tag" style="background:var(--card);color:var(--fg);" onclick="quickSearch('熊猫')">熊猫</span>
+                    <span class="tag" style="background:var(--card);color:var(--fg);" onclick="quickSearch('主题公园')">主题公园</span>
+                </div>
             </div>
-
-            <!-- 综合分析报告 -->
-            <div class="mt-16 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-3xl p-8">
-                <div class="flex justify-between items-start mb-6">
+            <div style="margin-top:48px;display:flex;gap:40px;justify-content:center;flex-wrap:wrap;">
+                <div style="text-align:center;">
+                    <div style="font-size:28px;font-weight:900;color:var(--accent);" class="serif" id="statProjects">0</div>
+                    <div style="font-size:12px;color:var(--fg-muted);">项目数据库</div>
+                </div>
+                <div style="text-align:center;">
+                    <div style="font-size:28px;font-weight:900;color:var(--accent2);" class="serif" id="statSources">0</div>
+                    <div style="font-size:12px;color:var(--fg-muted);">数据源接入</div>
+                </div>
+                <div style="text-align:center;">
+                    <div style="font-size:28px;font-weight:900;color:var(--fg);" class="serif" id="statReports">0</div>
+                    <div style="font-size:12px;color:var(--fg-muted);">分析报告</div>
+                </div>
+                <div style="text-align:center;">
+                    <div style="font-size:28px;font-weight:900;color:var(--warning);" class="serif" id="statData">0</div>
+                    <div style="font-size:12px;color:var(--fg-muted);">数据条目</div>
+                </div>
+            </div>
+        </section>
+        <section id="resultsSection" style="display:none;padding:80px 20px 60px;max-width:1400px;margin:0 auto;">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:24px;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <button onclick="resetSearch()" style="padding:8px 16px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--fg);cursor:pointer;font-family:inherit;font-size:13px;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+                        <i class="fas fa-arrow-left"></i> 重新搜索
+                    </button>
+                    <div style="font-size:14px;color:var(--fg-muted);">
+                        搜索 "<span id="searchKeyword" style="color:var(--accent);font-weight:600;"></span>" 共找到 <span id="resultCount" style="color:var(--accent2);font-weight:600;"></span> 个相关项目
+                    </div>
+                </div>
+                <button onclick="generateReport()" id="genReportBtn" style="padding:10px 24px;background:linear-gradient(135deg,var(--accent2),#14b8a6);color:#080c14;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:8px;transition:all 0.3s;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+                    <i class="fas fa-file-alt"></i> 生成综合研判报告
+                </button>
+            </div>
+            <div id="crawlPanel" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:24px;">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                    <i class="fas fa-spider" style="color:var(--accent);font-size:18px;"></i>
+                    <span style="font-weight:700;font-size:15px;">全网数据爬取中</span>
+                    <span class="status-dot crawling"></span>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;" id="crawlProgressList">
+                </div>
+            </div>
+            <div id="resultsList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:20px;">
+            </div>
+        </section>
+        <section id="reportSection" style="display:none;padding:0 20px 60px;max-width:1400px;margin:0 auto;">
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;position:relative;">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:24px;">
                     <div>
-                        <h2 class="text-2xl font-bold flex items-center gap-3">
-                            <i class="fa-solid fa-brain text-indigo-600"></i>
-                            AI 综合研判报告
+                        <h2 class="serif" style="font-size:24px;font-weight:900;color:var(--accent);margin-bottom:4px;">
+                            <i class="fas fa-chart-line" style="margin-right:8px;"></i>综合研判分析报告
                         </h2>
-                        <p class="text-gray-500 text-sm">基于 28 个来源 • 12 平台数据 • 深度多维度分析</p>
+                        <div style="font-size:13px;color:var(--fg-muted);" id="reportMeta"></div>
                     </div>
-                    <button onclick="copyReportToClipboard()" 
-                            class="copy-btn flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl text-sm font-semibold">
-                        <i class="fa-solid fa-copy"></i>
-                        一键复制报告
-                    </button>
+                    <div style="display:flex;gap:10px;">
+                        <button onclick="copyReport()" style="padding:10px 20px;background:var(--card);border:1px solid var(--accent);border-radius:8px;color:var(--accent);cursor:pointer;font-family:inherit;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;transition:all 0.2s;" onmouseover="this.style.background='var(--accent)';this.style.color='#080c14'" onmouseout="this.style.background='var(--card)';this.style.color='var(--accent)'">
+                            <i class="fas fa-copy"></i> 一键复制
+                        </button>
+                        <button onclick="feedToNotebookLM()" style="padding:10px 20px;background:linear-gradient(135deg,var(--accent),#e8c878);color:#080c14;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;transition:all 0.3s;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'">
+                            <i class="fab fa-google"></i> 投喂 NotebookLM
+                        </button>
+                    </div>
                 </div>
+                <div id="reportContent" style="line-height:1.9;font-size:14px;"></div>
+            </div>
+        </section>
+    </main>
+    <div class="modal-overlay" id="detailModal" onclick="if(event.target===this)closeModal()">
+        <div class="modal-content" id="modalContent" role="dialog" aria-modal="true">
+        </div>
+    </div>
+    <script>
+        // ========== 数据集 ==========
+        const projects = [
+            {
+                id: 1, name: "上海迪士尼度假区", shortName: "上海迪士尼", location: "上海市浦东新区川沙镇", country: "中国", region: "华东", type: "主题乐园", status: "运营中", openDate: "2016-06-16", area: "390 公顷", investment: "340 亿元（一期）、245 亿元（扩建）", investor: "华特迪士尼公司 / 上海申迪集团", investorRatio: "中方 57% / 美方 43%", planner: "华特迪士尼幻想工程 (WDI)", designer: "华特迪士尼幻想工程", builder: "中国建筑第八工程局等", operator: "上海国际主题乐园有限公司", annualVisitors: "1100 万人次（2023）", ticketPrice: "435-769 元（分档）", annualRevenue: "约 80 亿元", hotelRooms: "1220 间（2 家酒店）", phases: [{ name: "一期开业", year: "2016", content: "六大主题园区：米奇大街、奇想花园、梦幻世界、探险岛、宝藏湾、明日世界" }, { name: "玩具总动员", year: "2018", content: "全球首个玩具总动员主题园区" }, { name: "疯狂动物城", year: "2023", content: "全球首个疯狂动物城园区，投资约 45 亿元" }], social: { xiaohongshu: { posts: "15.6 万", sentiment: 0.78, hot: ["烟花秀", "玲娜贝儿", "创极速光轮", "疯狂动物城"] }, wechat: { articles: "8900+", reads: "230 万+", hot: ["亲子游攻略", "年卡", "酒店套餐"] }, douyin: { videos: "23.4 万", likes: "5600 万", hot: ["迪士尼 vlog", "烟花", "城堡拍照"] }, weibo: { topics: "1.2 万", reads: "8.5 亿", hot: ["上海迪士尼", "玲娜贝儿", "新园区"] }, bilibili: { videos: "5.6 万", views: "3.2 亿", hot: ["迪士尼深度游", "省钱攻略", "隐藏项目"] }, website: { pages: "1200+", hot: ["官网预订", "门票", "酒店", "年卡"] } }, swot: { strengths: ["全球顶级 IP 体系", "持续扩建能力", "长三角核心区位", "强运营团队", "品牌认知度高"], weaknesses: ["高票价门槛", "季节性客流波动大", "重资产投入回本周期长", "本土化程度不足"], opportunities: ["长三角消费升级", "Z 世代体验消费偏好", "数字化运营提升效率", "周边度假需求增长"], threats: ["国内主题乐园竞争加剧", "消费降级风险", "IP 引进政策不确定性", "替代性娱乐增多"] }, tags: ["主题乐园", "迪士尼", "IP 经济", "上海", "国际合作"]
+            },
+            {
+                id: 2, name: "北京环球影城", shortName: "北京环球影城", location: "北京市通州区梨园镇", country: "中国", region: "华北", type: "主题乐园", status: "运营中", openDate: "2021-09-20", area: "400 公顷（含预留地）", investment: "约 530 亿元", investor: "环球影业 / 首旅集团等中方财团", investorRatio: "中方 70% / 美方 30%", planner: "环球创意 (Universal Creative)", designer: "环球创意", builder: "中建一局 / 中建二局", operator: "北京国际度假区有限公司", annualVisitors: "约 900 万人次（2023）", ticketPrice: "418-748 元", annualRevenue: "约 70 亿元", hotelRooms: "1600 间（2 家酒店）", phases: [{ name: "一期开业", year: "2021", content: "七大主题景区：哈利波特、变形金刚、侏罗纪、功夫熊猫、水世界、小黄人、好莱坞" }, { name: "二期规划", year: "2025 预期", content: "任天堂超级任天堂世界等新园区" }], social: { xiaohongshu: { posts: "22 万", sentiment: 0.82, hot: ["哈利波特", "霍格沃茨", "魔杖", "黄油啤酒"] }, wechat: { articles: "1.2 万+", reads: "280 万+", hot: ["打卡攻略", "酒店", "淡季出行"] }, douyin: { videos: "31 万", likes: "7200 万", hot: ["环球影城 vlog", "哈利波特", "变形金刚"] }, weibo: { topics: "2.1 万", reads: "12 亿", hot: ["北京环球影城", "哈利波特", "黄油啤酒"] }, bilibili: { videos: "8.9 万", views: "5.1 亿", hot: ["环球攻略", "隐藏玩法", "拍照指南"] }, website: { pages: "980+", hot: ["官网票务", "酒店预订", "年卡"] } }, swot: { strengths: ["顶级好莱坞 IP", "京津冀核心区位", "后发技术优势", "强 IP 粉丝群体"], weaknesses: ["运营初期磨合", "IP 本土化挑战", "冬季运营压力", "单日承载量限制"], opportunities: ["冬奥遗产区域发展", "北京城市副中心建设", "北方文旅升级需求", "二期扩建空间"], threats: ["上海迪士尼直接竞争", "经济周期影响", "IP 合作不确定性", "周边配套不成熟"] }, tags: ["主题乐园", "环球影城", "哈利波特", "北京", "国际 IP"]
+            },
+            {
+                id: 3, name: "广州长隆旅游度假区", shortName: "长隆度假区", location: "广州市番禺区汉溪大道", country: "中国", region: "华南", type: "综合度假区", status: "运营中", openDate: "2006-04-07", area: "约 1000 公顷", investment: "超 300 亿元（累计）", investor: "广东长隆集团", investorRatio: "民营 100%", planner: "长隆集团策划设计院", designer: "多国设计院联合（加拿大 FORREC 等）", builder: "中建四局等多家", operator: "广州长隆集团有限公司", annualVisitors: "约 2500 万人次（含各园区）", ticketPrice: "300-500 元（分园区）", annualRevenue: "约 50 亿元", hotelRooms: "3300 间（5 家酒店）", phases: [{ name: "长隆欢乐世界", year: "2006", content: "大型机动游乐 + 表演" }, { name: "长隆水上乐园", year: "2007", content: "全球最大水上乐园之一" }, { name: "长隆野生动物世界", year: "1997 升级", content: "全球动物种类最多的主题公园" }, { name: "长隆国际大马戏", year: "2005", content: "世界级马戏表演" }, { name: "长隆飞鸟乐园", year: "2015", content: "湿地生态鸟类主题" }], social: { xiaohongshu: { posts: "28 万", sentiment: 0.85, hot: ["大马戏", "动物园", "水上乐园", "亲子"] }, wechat: { articles: "2.1 万+", reads: "450 万+", hot: ["亲子游", "年卡", "酒店套餐", "省钱攻略"] }, douyin: { videos: "42 万", likes: "1.2 亿", hot: ["长隆 vlog", "大马戏", "白虎", "水上乐园"] }, weibo: { topics: "3.5 万", reads: "15 亿", hot: ["长隆", "大马戏", "亲子游"] }, bilibili: { videos: "12 万", views: "6.8 亿", hot: ["长隆攻略", "动物世界", "省钱"] }, website: { pages: "2100+", hot: ["门票", "酒店", "年卡", "套票"] } }, swot: { strengths: ["自有品牌完全可控", "多业态协同运营", "华南文旅标杆", "亲子市场领导力", "持续升级迭代"], weaknesses: ["品牌国际化不够", "IP 自主开发偏弱", "园区设施老化", "创新放缓"], opportunities: ["大湾区文旅一体化", "清远新项目扩展", "IP 原创化布局", "数字化升级"], threats: ["珠海长隆内部竞争", "迪士尼/环球北上压力", "消费分流", "主题乐园同质化"] }, tags: ["综合度假", "长隆", "亲子游", "广州", "动物主题", "自主 IP"]
+            },
+            {
+                id: 4, name: "新加坡圣淘沙名胜世界", shortName: "圣淘沙名胜世界", location: "新加坡圣淘沙岛", country: "新加坡", region: "东南亚", type: "综合度假区", status: "运营中", openDate: "2010-03-18", area: "49 公顷", investment: "约 65 亿新元（约 320 亿元）", investor: "云顶新加坡 (Genting Singapore)", investorRatio: "上市公司 100%", planner: "云顶集团战略策划", designer: "国际多家设计事务所", builder: "多方国际工程联合体", operator: "云顶新加坡", annualVisitors: "约 2000 万人次", ticketPrice: "78-98 新元（约 420-530 元）", annualRevenue: "约 28 亿新元", hotelRooms: "4600 间（6 家酒店）", phases: [{ name: "环球影城", year: "2010", content: "东南亚首个环球影城，7 大主题区 24 个游乐项目" }, { name: "S.E.A.海洋馆", year: "2012", content: "世界最大海洋馆之一" }, { name: "水上探险乐园", year: "2012", content: "大型水上乐园" }, { name: "赌场/会议中心", year: "2010", content: "集娱乐博彩 MICE 于一体" }], social: { xiaohongshu: { posts: "18 万", sentiment: 0.81, hot: ["环球影城", "海洋馆", "亲子", "新加坡"] }, wechat: { articles: "1.5 万+", reads: "320 万+", hot: ["新加坡攻略", "亲子游", "度假"] }, douyin: { videos: "15 万", likes: "3800 万", hot: ["新加坡环球", "海洋馆", "度假酒店"] }, weibo: { topics: "8900", reads: "5.6 亿", hot: ["圣淘沙", "新加坡旅游", "环球影城"] }, bilibili: { videos: "4.2 万", views: "2.8 亿", hot: ["新加坡攻略", "环球影城", "海洋馆"] }, website: { pages: "850+", hot: ["门票", "酒店", "套票", "会议"] } }, swot: { strengths: ["东南亚枢纽区位", "MICE+ 娱乐复合模式", "博彩收入支撑", "多语言服务能力"], weaknesses: ["面积受限", "设施渐旧", "竞争加剧", "对游客依赖度高"], opportunities: ["东南亚中产崛起", "中国出境游恢复", "新扩建项目", "数字营销升级"], threats: ["马来西亚/泰国竞争", "全球经济波动", "疫情风险", "签证政策变化"] }, tags: ["综合度假", "环球影城", "新加坡", "海洋馆", "MICE", "博彩"]
+            },
+            {
+                id: 5, name: "日本大阪环球影城 (USJ)", shortName: "大阪环球影城", location: "日本大阪市此花区", country: "日本", region: "东亚", type: "主题乐园", status: "运营中", openDate: "2001-03-31", area: "54 公顷", investment: "超 3000 亿日元（累计含扩建）", investor: "NBC 环球 / 大阪燃气等", investorRatio: "美方持品牌许可 / 日方运营", planner: "环球创意 / USJ 策划团队", designer: "环球创意", builder: "大林组 / 竹中工务店等", operator: "USJ 株式会社", annualVisitors: "约 1400 万人次（2023）", ticketPrice: "8600-9800 日元（约 410-470 元）", annualRevenue: "约 1800 亿日元", hotelRooms: "约 1600 间", phases: [{ name: "开业", year: "2001", content: "日本首个环球影城" }, { name: "哈利波特园区", year: "2014", content: "大幅带动客流回升" }, { name: "超级任天堂世界", year: "2021", content: "全球首个马里奥主题园区，沉浸体验革新" }, { name: "大金刚园区", year: "2024", content: "任天堂世界扩建" }], social: { xiaohongshu: { posts: "12 万", sentiment: 0.88, hot: ["马里奥", "任天堂", "哈利波特", "大阪"] }, wechat: { articles: "7200+", reads: "180 万+", hot: ["USJ 攻略", "任天堂", "大阪旅游"] }, douyin: { videos: "9.8 万", likes: "2400 万", hot: ["环球影城", "马里奥", "大阪"] }, weibo: { topics: "6800", reads: "4.2 亿", hot: ["大阪环球", "任天堂", "日本旅游"] }, bilibili: { videos: "3.5 万", views: "2.1 亿", hot: ["USJ 攻略", "马里奥", "任天堂世界"] }, website: { pages: "620+", hot: ["门票", "快速通行", "酒店", "任天堂"] } }, swot: { strengths: ["任天堂独家 IP", "沉浸式体验创新", "日本文旅生态完善", "高复购率", "亚洲市场引领"], weaknesses: ["园区面积有限", "淡旺季差异大", "人力成本高", "自然灾害风险"], opportunities: ["任天堂 IP 持续开发", "亚洲出境游增长", "大阪世博 2025", "沉浸技术升级"], threats: ["上海环球客源分流", "日元波动影响", "日本人口下降", "新竞争者入局"] }, tags: ["主题乐园", "环球影城", "任天堂", "日本", "沉浸式体验"]
+            },
+            {
+                id: 6, name: "杭州宋城景区", shortName: "杭州宋城", location: "杭州市西湖区之江路", country: "中国", region: "华东", type: "文化演艺", status: "运营中", openDate: "1996-05-18", area: "约 90 公顷", investment: "累计超 50 亿元", investor: "宋城演艺发展股份有限公司", investorRatio: "民营/上市公司", planner: "宋城演艺策划团队", designer: "宋城设计院", builder: "多家国内建筑商", operator: "宋城演艺", annualVisitors: "约 1500 万人次", ticketPrice: "280-320 元（含演出）", annualRevenue: "约 26 亿元", hotelRooms: "度假酒店约 600 间", phases: [{ name: "宋城景区开业", year: "1996", content: "南宋文化主题公园" }, { name: "宋城千古情", year: "1997 升级", content: "世界三大名秀之一，年均演出 3000+ 场" }, { name: "宋城演艺王国", year: "2020 升级", content: "多剧场多演出升级" }], social: { xiaohongshu: { posts: "9.8 万", sentiment: 0.83, hot: ["千古情", "宋城", "杭州必去", "演出"] }, wechat: { articles: "6500+", reads: "156 万+", hot: ["宋城攻略", "千古情", "杭州亲子"] }, douyin: { videos: "8.5 万", likes: "2100 万", hot: ["千古情", "宋城 vlog", "穿汉服"] }, weibo: { topics: "5400", reads: "3.8 亿", hot: ["宋城", "千古情", "杭州旅游"] }, bilibili: { videos: "2.8 万", views: "1.5 亿", hot: ["千古情全程", "宋城攻略", "汉服体验"] }, website: { pages: "480+", hot: ["门票", "演出时间", "千古情"] } }, swot: { strengths: ["自主 IP（千古情系列）", "高度标准化可复制", "运营成本低", "现金流强劲", "品牌 30 年积累"], weaknesses: ["产品同质化风险", "依赖演出单核", "创新不足", "异地项目水土不服"], opportunities: ["国潮文化兴起", "沉浸式演出升级", "轻资产输出模式", "数字化演艺技术"], threats: ["消费者审美疲劳", "短视频冲击", "文旅融合新业态竞争", "人才流失"] }, tags: ["文化演艺", "千古情", "杭州", "自主 IP", "国潮"]
+            },
+            {
+                id: 7, name: "深圳华侨城旅游度假区", shortName: "深圳华侨城", location: "深圳市南山区华侨城", country: "中国", region: "华南", type: "综合度假区", status: "运营中", openDate: "1989-11-22（锦绣中华）", area: "约 450 公顷", investment: "累计超 200 亿元", investor: "华侨城集团 (央企)", investorRatio: "央企控股/上市公司", planner: "华侨城策划设计院", designer: "华侨城设计院/多所合作", builder: "中建体系", operator: "华侨城文旅科技集团", annualVisitors: "约 3000 万人次（含各景区）", ticketPrice: "200-280 元/园区", annualRevenue: "约 45 亿元", hotelRooms: "约 2800 间", phases: [{ name: "锦绣中华", year: "1989", content: "中国第一座主题公园" }, { name: "中国民俗文化村", year: "1991", content: "民族民俗文化展示" }, { name: "世界之窗", year: "1994", content: "世界景观微缩主题公园" }, { name: "欢乐谷", year: "1998", content: "现代主题乐园" }], social: { xiaohongshu: { posts: "8.2 万", sentiment: 0.72, hot: ["世界之窗", "欢乐谷", "拍照", "深圳周末"] }, wechat: { articles: "5600+", reads: "135 万+", hot: ["华侨城攻略", "周末游", "亲子"] }, douyin: { videos: "12 万", likes: "3200 万", hot: ["世界之窗烟花", "欢乐谷", "深圳打卡"] }, weibo: { topics: "4200", reads: "2.8 亿", hot: ["华侨城", "世界之窗", "深圳旅游"] }, bilibili: { videos: "1.9 万", views: "9800 万", hot: ["世界之窗", "欢乐谷", "华侨城"] }, website: { pages: "1500+", hot: ["门票", "年卡", "酒店", "活动"] } }, swot: { strengths: ["央企背书资源优势", "中国主题公园开创者", "深圳核心地段", "城市综合运营能力"], weaknesses: ["产品老化", "创新迭代慢", "IP 能力不足", "欢乐谷品牌下滑"], opportunities: ["深圳国际化都市升级", "科技赋能文旅", "城中村改造空间", "大湾区一体化"], threats: ["新锐乐园竞争", "年轻消费者流失", "地价成本上升", "国企机制灵活性不足"] }, tags: ["综合度假", "华侨城", "世界之窗", "深圳", "央企", "主题公园鼻祖"]
+            },
+            {
+                id: 8, name: "韩国济州神话世界", shortName: "济州神话世界", location: "韩国济州特别自治道西归浦市", country: "韩国", region: "东亚", type: "综合度假区", status: "运营中（部分在建）", openDate: "2017-09-22", area: "约 250 公顷", investment: "约 3 万亿韩元（约 160 亿元）", investor: "变化成长资产运营", investorRatio: "韩方控股", planner: "济州神话世界开发团队", designer: "国际多家设计事务所", builder: "多家韩国建设公司", operator: "济州神话世界运营团队", annualVisitors: "约 400 万人次", ticketPrice: "30000-55000 韩元（约 160-290 元）", annualRevenue: "约 4000 亿韩元", hotelRooms: "约 5000 间（多品牌）", phases: [{ name: "主题公园", year: "2017", content: "神话历史公园、视听旋转等 15 项游乐设施" }, { name: "度假酒店群", year: "2018 起", content: "万豪、蓝鼎、君悦等多品牌酒店集群" }, { name: "赌场娱乐", year: "2018", content: "外国人专用赌场" }, { name: "度假村三期", year: "规划中", content: "高端别墅 + 展览中心" }], social: { xiaohongshu: { posts: "3.2 万", sentiment: 0.68, hot: ["济州岛", "神话世界", "度假", "韩式"] }, wechat: { articles: "2100+", reads: "56 万+", hot: ["济州岛攻略", "神话世界", "度假酒店"] }, douyin: { videos: "2.8 万", likes: "680 万", hot: ["济州岛", "神话世界", "韩国旅游"] }, weibo: { topics: "1600", reads: "9800 万", hot: ["济州岛", "神话世界", "韩国度假"] }, bilibili: { videos: "4200", views: "3200 万", hot: ["济州岛攻略", "度假村", "韩国游"] }, website: { pages: "320+", hot: ["门票", "酒店", "套餐", "航班"] } }, swot: { strengths: ["济州岛免签优势", "大型综合度假体量", "多品牌酒店", "博彩收入支撑"], weaknesses: ["位置偏远交通不便", "知名度不足", "IP 吸引力弱", "高度依赖中国游客"], opportunities: ["中国赴韩游恢复", "济州岛开发政策", "邮轮经济", "免税购物整合"], threats: ["中韩关系波动", "萨德影响持续", "国内替代选择增多", "济州岛承载力限制"] }, tags: ["综合度假", "济州岛", "赌场", "韩国", "免签"]
+            },
+            {
+                id: 9, name: "珠海横琴长隆国际海洋度假区", shortName: "珠海长隆海洋王国", location: "珠海市横琴新区富祥湾", country: "中国", region: "华南", type: "海洋主题度假区", status: "运营中", openDate: "2014-03-29", area: "约 132 公顷", investment: "超 200 亿元", investor: "广东长隆集团", investorRatio: "民营 100%", planner: "长隆集团策划设计院", designer: "加拿大 FORREC / 太平洋设计", builder: "中建体系等", operator: "珠海长隆投资发展有限公司", annualVisitors: "约 1200 万人次", ticketPrice: "395-495 元", annualRevenue: "约 32 亿元", hotelRooms: "5100 间（5 家酒店）", phases: [{ name: "海洋王国开业", year: "2014", content: "全球最大海洋主题乐园，5 项吉尼斯纪录" }, { name: "横琴湾酒店", year: "2014", content: "1888 间超大型海洋主题酒店" }, { name: "宇宙乐园", year: "2022", content: "室内乐园，全天候运营" }], social: { xiaohongshu: { posts: "16 万", sentiment: 0.84, hot: ["鲸鲨馆", "企鹅馆", "烟花", "亲子海洋"] }, wechat: { articles: "1.1 万+", reads: "256 万+", hot: ["珠海长隆攻略", "亲子", "酒店", "年卡"] }, douyin: { videos: "19 万", likes: "5100 万", hot: ["鲸鲨", "企鹅", "烟花秀", "海洋王国"] }, weibo: { topics: "9800", reads: "6.2 亿", hot: ["珠海长隆", "海洋王国", "亲子游"] }, bilibili: { videos: "5.6 万", views: "3.1 亿", hot: ["海洋王国攻略", "鲸鲨馆", "烟花"] }, website: { pages: "1200+", hot: ["门票", "酒店", "套票", "年卡"] } }, swot: { strengths: ["全球最大海洋主题设施", "亲子市场领先", "横琴政策优势", "酒店集群效应"], weaknesses: ["单一区域客流依赖", "季节波动", "体量太大运营复杂", "离主城区远"], opportunities: ["横琴粤澳深度合作区", "港珠澳大桥引流", "澳门协同发展", "海洋研学趋势"], threats: ["三亚海洋类竞争", "疫情冲击复健", "运营成本高企", "口岸政策变化"] }, tags: ["海洋主题", "长隆", "珠海横琴", "亲子游", "大湾区"]
+            },
+            {
+                id: 10, name: "成都都江堰·熊猫谷文旅综合体", shortName: "熊猫谷综合体", location: "四川省成都市都江堰市", country: "中国", region: "西南", type: "文旅综合体", status: "运营中（持续扩建）", openDate: "2012-01-17", area: "约 133 公顷", investment: "约 120 亿元", investor: "成都文旅集团 / 多方合资", investorRatio: "国资/民营混合", planner: "成都文旅策划研究院", designer: "四川省建筑设计院/多家合作", builder: "成都建工等", operator: "成都熊猫谷运营公司", annualVisitors: "约 600 万人次（含融创）", ticketPrice: "55 元（熊猫基地）+ 各园区", annualRevenue: "约 18 亿元", hotelRooms: "约 2000 间", phases: [{ name: "熊猫基地", year: "2012", content: "大熊猫保护研究中心，全球最强熊猫 IP" }, { name: "融创文旅城", year: "2020", content: "融创茂 + 雪世界 + 水世界 + 乐园" }, { name: "青城山度假区", year: "持续升级", content: "道教文化 + 自然度假" }], social: { xiaohongshu: { posts: "25 万", sentiment: 0.91, hot: ["大熊猫", "熊猫基地", "融创雪世界", "成都"] }, wechat: { articles: "1.8 万+", reads: "400 万+", hot: ["成都旅游", "熊猫", "都江堰攻略"] }, douyin: { videos: "35 万", likes: "9800 万", hot: ["熊猫", "萌兰", "成都打卡", "融创"] }, weibo: { topics: "2.8 万", reads: "18 亿", hot: ["大熊猫", "萌兰", "成都旅游"] }, bilibili: { videos: "7.5 万", views: "4.2 亿", hot: ["熊猫日常", "萌兰", "成都攻略"] }, website: { pages: "680+", hot: ["门票", "熊猫基地", "融创", "酒店"] } }, swot: { strengths: ["熊猫全球顶流 IP", "成都旅游生态完善", "文旅政策支持充足", "自然 + 文化复合价值"], weaknesses: ["管理体制复杂", "项目间联动不足", "设施碎片化", "夏冬客流差异大"], opportunities: ["熊猫 IP 产业化", "巴蜀文化国际传播", "西部旅游枢纽地位", "近郊微度假趋势"], threats: ["IP 同质化竞用", "承载力限制", "九寨沟等替代", "区域交通瓶颈"] }, tags: ["熊猫 IP", "文旅综合体", "成都", "融创", "大熊猫保护"]
+            }
+        ];
+
+        // ========== 搜索引擎 ==========
+        const activeSources = new Set(['xiaohongshu', 'wechat', 'douyin', 'website', 'weibo', 'bilibili']);
+        let currentResults = [];
+        let currentReport = '';
+        const sourceNames = { xiaohongshu: '小红书', wechat: '微信公众号', douyin: '抖音', website: '官方网站', weibo: '微博', bilibili: 'B 站' };
+        const sourceIcons = { xiaohongshu: 'fa-book-open', wechat: 'fa-weixin', douyin: 'fa-tiktok', website: 'fa-globe', weibo: 'fa-weibo', bilibili: 'fa-play-circle' };
+        const sourceCssClass = { xiaohongshu: 'source-xhs', wechat: 'source-wechat', douyin: 'source-douyin', website: 'source-web', weibo: 'source-weibo', bilibili: 'source-bilibili' };
+
+        // 切换数据源
+        function toggleSource(el) {
+            const source = el.dataset.source;
+            el.classList.toggle('active');
+            if (activeSources.has(source)) {
+                activeSources.delete(source);
+            } else {
+                activeSources.add(source);
+            }
+        }
+
+        // 模糊搜索算法 (补全部分)
+        function fuzzySearch(keyword) {
+            if (!keyword.trim()) return [];
+            const kw = keyword.toLowerCase().trim();
+            const results = projects.map(p => {
+                let score = 0;
+                const fields = [
+                    { val: p.name, w: 10 }, { val: p.shortName, w: 8 }, { val: p.location, w: 5 },
+                    { val: p.country, w: 4 }, { val: p.region, w: 4 }, { val: p.type, w: 6 },
+                    { val: p.investor, w: 5 }, { val: p.operator, w: 4 }, { val: p.planner, w: 3 },
+                    { val: p.designer, w: 3 }, { val: p.builder, w: 2 }, { val: p.status, w: 3 },
+                    ...(p.tags || []).map(t => ({ val: t, w: 6 })),
+                    ...(p.phases || []).map(ph => ({ val: ph.content, w: 3 })),
+                    ...(p.swot?.strengths || []).map(s => ({ val: s, w: 2 })),
+                    ...(p.swot?.opportunities || []).map(o => ({ val: o, w: 2 }))
+                ];
+                fields.forEach(f => {
+                    if (!f.val) return;
+                    const lower = f.val.toLowerCase();
+                    if (lower.includes(kw)) score += f.w;
+                    let ki = 0;
+                    for (let i = 0; i < lower.length && ki < kw.length; i++) {
+                        if (lower[i] === kw[ki]) ki++;
+                    }
+                    if (ki === kw.length) score += Math.floor(f.w * 0.6);
+                });
+                return { ...p, score };
+            }).filter(p => p.score > 0).sort((a, b) => b.score - a.score);
+            return results;
+        }
+
+        // 开始搜索
+        function startSearch() {
+            const keyword = document.getElementById('searchInput').value;
+            if (!keyword.trim()) {
+                showToast('请输入搜索关键词', 'warning');
+                return;
+            }
+            
+            // 界面切换
+            document.getElementById('heroSection').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'block';
+            document.getElementById('reportSection').style.display = 'none';
+            document.getElementById('searchKeyword').innerText = keyword;
+            
+            // 模拟爬取过程
+            const crawlPanel = document.getElementById('crawlPanel');
+            const resultsList = document.getElementById('resultsList');
+            crawlPanel.style.display = 'block';
+            resultsList.innerHTML = '';
+            currentResults = [];
+            
+            // 生成爬虫进度
+            const progressList = document.getElementById('crawlProgressList');
+            progressList.innerHTML = '';
+            activeSources.forEach(src => {
+                const div = document.createElement('div');
+                div.className = 'crawl-node';
+                div.style.cssText = `display:flex;align-items:center;gap:8px;padding:10px;background:var(--card);border-radius:8px;border:1px solid var(--border);`;
+                div.innerHTML = `<i class="fab ${sourceIcons[src]}" style="color:var(--fg-muted)"></i> <span style="font-size:13px">${sourceNames[src]}</span> <div style="flex:1;height:4px;background:var(--bg);border-radius:2px;overflow:hidden;margin-left:8px;"><div class="crawl-bar" style="width:0;height:100%;background:var(--accent2);"></div></div>`;
+                progressList.appendChild(div);
+            });
+
+            // 模拟延迟搜索
+            setTimeout(() => {
+                currentResults = fuzzySearch(keyword);
+                document.getElementById('resultCount').innerText = currentResults.length;
+                crawlPanel.style.display = 'none';
+                renderResults(currentResults);
+                showToast(`搜索完成，找到 ${currentResults.length} 个项目`, 'success');
+            }, 1500);
+        }
+
+        // 快速搜索
+        function quickSearch(keyword) {
+            document.getElementById('searchInput').value = keyword;
+            startSearch();
+        }
+
+        // 重置搜索
+        function resetSearch() {
+            document.getElementById('heroSection').style.display = 'flex';
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('reportSection').style.display = 'none';
+            document.getElementById('searchInput').value = '';
+        }
+
+        // 渲染结果列表
+        function renderResults(results) {
+            const list = document.getElementById('resultsList');
+            list.innerHTML = '';
+            if (results.length === 0) {
+                list.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--fg-muted);">未找到相关项目，请尝试其他关键词</div>`;
+                return;
+            }
+            results.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'project-card bg-[var(--card)] rounded-xl p-6 flex flex-col gap-4 cursor-pointer';
+                card.onclick = () => openModal(p);
                 
-                <div id="analysisReport" class="prose max-w-none text-gray-700 leading-relaxed"></div>
-                
-                <div class="mt-10 flex items-center justify-center gap-8 text-xs text-gray-400">
-                    <div class="flex items-center gap-1">
-                        <i class="fa-solid fa-check-circle"></i>
-                        数据真实性：92%
+                // 高亮关键词
+                const kw = document.getElementById('searchInput').value;
+                const highlight = (text) => {
+                    if(!kw) return text;
+                    return text.replace(new RegExp(`(${kw})`, 'gi'), '<span class="highlight-match">\$1</span>');
+                };
+
+                card.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:start;">
+                        <div>
+                            <div class="serif text-xl font-bold text-[var(--fg)] mb-1">\${highlight(p.name)}</div>
+                            <div style="font-size:12px;color:var(--fg-muted);">${p.location} · ${p.type}</div>
+                        </div>
+                        <div style="background:rgba(212,162,78,0.1);color:var(--accent);padding:4px 8px;border-radius:6px;font-size:11px;font-weight:600;">
+                            ${p.status}
+                        </div>
                     </div>
-                    <div class="flex items-center gap-1">
-                        <i class="fa-solid fa-check-circle"></i>
-                        投资风险评估：中低
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        ${p.tags.slice(0, 3).map(t => `<span class="tag bg-[var(--bg-elevated)] text-[var(--fg-muted)] border border-[var(--border)]">${t}</span>`).join('')}
                     </div>
-                    <div class="flex items-center gap-1">
-                        <i class="fa-solid fa-check-circle"></i>
-                        推荐指数：★★★★☆
+                    <div style="margin-top:auto;padding-top:16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:13px;">
+                        <div><i class="fas fa-euro-sign" style="color:var(--accent);margin-right:4px;"></i>${p.investment}</div>
+                        <div><i class="fas fa-eye" style="color:var(--accent2);margin-right:4px;"></i>${p.annualVisitors}</div>
                     </div>
-                    <div class="flex items-center gap-1">
-                        生成时间：<span id="reportTime"></span>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        // 模态框逻辑
+function openModal(project) {
+    const modal = document.getElementById('detailModal');
+    const content = document.getElementById('modalContent');
+    
+    // 生成SWOT分析HTML
+    const swotHtml = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+            <div style="background:rgba(34,197,94,0.05);border:1px solid rgba(34,197,94,0.2);padding:12px;border-radius:8px;">
+                <div style="color:var(--success);font-weight:700;margin-bottom:8px;"><i class="fas fa-check-circle"></i> 优势 (Strengths)</div>
+                <ul style="list-style:none;padding:0;font-size:13px;color:var(--fg-muted);line-height:1.6;">${project.swot.strengths.map(s => `<li>• ${s}</li>`).join('')}</ul>
+            </div>
+            <div style="background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.2);padding:12px;border-radius:8px;">
+                <div style="color:var(--danger);font-weight:700;margin-bottom:8px;"><i class="fas fa-exclamation-circle"></i> 劣势 (Weaknesses)</div>
+                <ul style="list-style:none;padding:0;font-size:13px;color:var(--fg-muted);line-height:1.6;">${project.swot.weaknesses.map(s => `<li>• ${s}</li>`).join('')}</ul>
+            </div>
+            <div style="background:rgba(59,130,246,0.05);border:1px solid rgba(59,130,246,0.2);padding:12px;border-radius:8px;">
+                <div style="color:var(--accent2);font-weight:700;margin-bottom:8px;"><i class="fas fa-lightbulb"></i> 机会 (Opportunities)</div>
+                <ul style="list-style:none;padding:0;font-size:13px;color:var(--fg-muted);line-height:1.6;">${project.swot.opportunities.map(s => `<li>• ${s}</li>`).join('')}</ul>
+            </div>
+            <div style="background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.2);padding:12px;border-radius:8px;">
+                <div style="color:var(--warning);font-weight:700;margin-bottom:8px;"><i class="fas fa-shield-alt"></i> 威胁 (Threats)</div>
+                <ul style="list-style:none;padding:0;font-size:13px;color:var(--fg-muted);line-height:1.6;">${project.swot.threats.map(s => `<li>• ${s}</li>`).join('')}</ul>
+            </div>
+        </div>
+    `;
+
+    // 生成发展阶段HTML
+    const phasesHtml = project.phases.map(phase => `
+        <div style="padding:12px;background:var(--bg-elevated);border-radius:8px;margin-top:8px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                <div style="font-weight:600;color:var(--accent);">${phase.name}</div>
+                <div style="font-size:12px;color:var(--fg-muted);">${phase.year}</div>
+            </div>
+            <div style="font-size:13px;color:var(--fg-muted);">${phase.content}</div>
+        </div>
+    `).join('');
+
+    // 生成社交媒体数据HTML
+    const socialHtml = Object.entries(project.social).map(([key, data]) => {
+        const iconClass = sourceIcons[key];
+        const name = sourceNames[key];
+        const colorClass = sourceCssClass[key];
+        return `
+            <div style="padding:12px;background:var(--bg-elevated);border-radius:8px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                    <i class="fab ${iconClass} ${colorClass}" style="font-size:16px;"></i>
+                    <div style="font-weight:600;">${name}</div>
+                </div>
+                ${key !== 'website' ? `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;color:var(--fg-muted);">
+                        <div>内容量：<span style="color:var(--accent);">${data.posts || data.articles || data.videos || data.topics || data.pages}</span></div>
+                        <div>互动量：<span style="color:var(--accent);">${data.likes || data.reads || data.views || data.reads}</span></div>
+                    </div>
+                    <div style="margin-top:8px;font-size:12px;color:var(--fg-muted);">
+                        热点：<span style="color:var(--accent);">${data.hot.slice(0,3).join(' · ')}</span>
+                    </div>
+                ` : `
+                    <div style="font-size:12px;color:var(--fg-muted);">官网页面数：<span style="color:var(--accent);">${data.pages}</span></div>
+                    <div style="margin-top:8px;font-size:12px;color:var(--fg-muted);">
+                        热门：<span style="color:var(--accent);">${data.hot.join(' · ')}</span>
+                    </div>
+                `}
+            </div>
+        `;
+    }).join('');
+
+    content.innerHTML = `
+        <div style="padding:32px;">
+            <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:24px;">
+                <div>
+                    <h2 class="serif" style="font-size:24px;font-weight:900;color:var(--accent);margin-bottom:8px;">${project.name}</h2>
+                    <div style="display:flex;gap:12px;font-size:13px;color:var(--fg-muted);">
+                        <span><i class="fas fa-map-marker-alt"></i> ${project.location}</span>
+                        <span><i class="fas fa-tag"></i> ${project.type}</span>
+                        <span><i class="fas fa-calendar"></i> ${project.openDate}</span>
+                    </div>
+                </div>
+                <button onclick="closeModal()" style="background:none;border:none;font-size:24px;color:var(--fg-muted);cursor:pointer;">&times;</button>
+            </div>
+
+            <div class="report-block">
+                <div style="font-weight:700;margin-bottom:12px;">核心数据</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
+                    <div>
+                        <div style="font-size:12px;color:var(--fg-muted);">投资规模</div>
+                        <div style="font-size:16px;font-weight:700;color:var(--accent);">${project.investment}</div>
+                    </div>
+                    <div>
+                        <div style="font-size:12px;color:var(--fg-muted);">年客流量</div>
+                        <div style="font-size:16px;font-weight:700;color:var(--accent2);">${project.annualVisitors}</div>
+                    </div>
+                    <div>
+                        <div style="font-size:12px;color:var(--fg-muted);">年营收</div>
+                        <div style="font-size:16px;font-weight:700;color:var(--warning);">${project.annualRevenue}</div>
+                    </div>
+                    <div>
+                        <div style="font-size:12px;color:var(--fg-muted);">酒店客房</div>
+                        <div style="font-size:16px;font-weight:700;color:var(--fg);">${project.hotelRooms}</div>
                     </div>
                 </div>
             </div>
+
+            <div class="report-block">
+                <div style="font-weight:700;margin-bottom:12px;">发展阶段</div>
+                ${phasesHtml}
+            </div>
+
+            <div class="report-block">
+                <div style="font-weight:700;margin-bottom:12px;">社交媒体表现</div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;">
+                    ${socialHtml}
+                </div>
+            </div>
+
+            <div class="report-block">
+                <div style="font-weight:700;margin-bottom:12px;">SWOT分析</div>
+                ${swotHtml}
+            </div>
+
+            <div style="margin-top:24px;display:flex;gap:12px;justify-content:flex-end;">
+                <button onclick="copyProjectInfo('${project.id}')" style="padding:8px 16px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--fg);cursor:pointer;">
+                    <i class="fas fa-copy"></i> 复制信息
+                </button>
+                <button onclick="addToReport('${project.id}')" style="padding:8px 16px;background:linear-gradient(135deg,var(--accent),#e8c878);color:#080c14;border:none;border-radius:8px;cursor:pointer;font-weight:600;">
+                    <i class="fas fa-plus"></i> 加入研判报告
+                </button>
+            </div>
         </div>
-    </div>
+    `;
+    
+    modal.classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
 
-    <!-- 页脚提示 -->
-    <div class="max-w-7xl mx-auto px-8 py-8 text-center text-xs text-gray-400 border-t">
-        本平台为完整可运行原型 • 真实部署请使用 Node.js + Puppeteer / Playwright 替换模拟爬虫 • 
-        小红书/抖音/微信需配合官方开放接口或企业级反爬虫代理 • 所有数据仅供演示 • 
-        一键复制内容已优化为 NotebookLM 最佳格式（Markdown + 结构化字段）
-    </div>
+function closeModal() {
+    const modal = document.getElementById('detailModal');
+    modal.classList.remove('show');
+    document.body.style.overflow = '';
+}
 
-    <script>
-        // Tailwind 初始化
-        function initTailwind() {
-            tailwind.config = {
-                content: [],
-                theme: { extend: {} }
-            }
-        }
+// 复制项目信息
+function copyProjectInfo(id) {
+    const project = projects.find(p => p.id == id);
+    const text = `项目名称：${project.name}
+位置：${project.location}
+类型：${project.type}
+投资规模：${project.investment}
+年客流量：${project.annualVisitors}
+年营收：${project.annualRevenue}
+酒店客房：${project.hotelRooms}
+`;
+    navigator.clipboard.writeText(text).then(() => {
+        showToast('项目信息已复制到剪贴板', 'success');
+    });
+}
+
+// 添加到研判报告
+function addToReport(id) {
+    const project = projects.find(p => p.id == id);
+    if (!currentReport.includes(project.name)) {
+        currentReport += `\n\n=== ${project.name} ===\n`;
+        currentReport += `位置：${project.location}\n`;
+        currentReport += `投资规模：${project.investment}\n`;
+        currentReport += `年客流量：${project.annualVisitors}\n`;
+        currentReport += `年营收：${project.annualRevenue}\n`;
+        currentReport += `酒店客房：${project.hotelRooms}\n`;
+        currentReport += `核心优势：${project.swot.strengths.slice(0,2).join('、')}\n`;
+        currentReport += `主要风险：${project.swot.threats.slice(0,2).join('、')}\n`;
+        closeModal();
+        showToast('已添加到研判报告', 'success');
+    } else {
+        closeModal();
+        showToast('该项目已在报告中', 'info');
+    }
+}
+
+// 生成综合研判报告
+function generateReport() {
+    if (currentResults.length === 0) {
+        showToast('请先搜索项目', 'warning');
+        return;
+    }
+
+    document.getElementById('resultsSection').style.display = 'none';
+    document.getElementById('reportSection').style.display = 'block';
+    
+    const reportMeta = document.getElementById('reportMeta');
+    const reportContent = document.getElementById('reportContent');
+    const keyword = document.getElementById('searchKeyword').innerText;
+    
+    reportMeta.innerHTML = `
+        搜索关键词：<span style="color:var(--accent);font-weight:600;">${keyword}</span> | 
+        分析项目数：<span style="color:var(--accent2);font-weight:600;">${currentResults.length}</span> | 
+        生成时间：${new Date().toLocaleString()}
+    `;
+
+    // 生成报告内容
+    let report = `# 亚洲文旅项目综合研判报告\n\n`;
+    report += `## 一、搜索概况\n`;
+    report += `- 搜索关键词：${keyword}\n`;
+    report += `- 匹配项目数：${currentResults.length}\n`;
+    report += `- 数据源覆盖：${Array.from(activeSources).map(s => sourceNames[s]).join('、')}\n\n`;
+    
+    report += `## 二、项目对比分析\n\n`;
+    currentResults.forEach((p, index) => {
+        report += `### ${index + 1}. ${p.name}\n`;
+        report += `**基本信息**\n`;
+        report += `- 位置：${p.location}\n`;
+        report += `- 类型：${p.type}\n`;
+        report += `- 投资规模：${p.investment}\n`;
+        report += `- 年客流量：${p.annualVisitors}\n`;
+        report += `- 年营收：${p.annualRevenue}\n\n`;
         
-        // 模拟爬虫数据池（实际项目中替换为真实 API）
-        const mockDatabase = {
-            defaultProject: {
-                name: "示例亚洲文旅项目",
-                location: "泰国普吉岛 / 中国海南 / 日本冲绳（根据关键词自动匹配）",
-                investor: "万达集团 + 泰国中央集团 + 国际主权基金",
-                planning: "2023年6月立项 • 文化沉浸 + 生态度假 + 数字孪生",
-                design: "Zaha Hadid Architects + 清华大学建筑学院",
-                construction: "2024Q3开工 • 总建筑面积 38万㎡ • 预计2027年开业",
-                operation: "预计年游客量 180万人次 • 首年收入 9.8亿人民币 • ROI 18.6%",
-                socialSentiment: "小红书热度 12.4万笔记 • 抖音播放 4.8亿 • 正面评价 87%"
-            }
-        }
+        report += `**SWOT分析**\n`;
+        report += `优势：${p.swot.strengths.slice(0,3).join('、')}\n`;
+        report += `劣势：${p.swot.weaknesses.slice(0,2).join('、')}\n`;
+        report += `机会：${p.swot.opportunities.slice(0,2).join('、')}\n`;
+        report += `威胁：${p.swot.threats.slice(0,2).join('、')}\n\n`;
+        
+        report += `**社交媒体表现**\n`;
+        const topPlatform = Object.entries(p.social).reduce((a, b) => 
+            (b[1].posts || b[1].articles || b[1].videos || 0) > (a[1].posts || a[1].articles || a[1].videos || 0) ? b : a
+        );
+        report += `- 主战场：${sourceNames[topPlatform[0]]}\n`;
+        report += `- 内容量：${topPlatform[1].posts || topPlatform[1].articles || topPlatform[1].videos}\n`;
+        report += `- 互动量：${topPlatform[1].likes || topPlatform[1].reads || topPlatform[1].views}\n\n`;
+    });
 
-        // 模拟爬虫日志输出
-        function appendLog(message) {
-            const logEl = document.getElementById('crawlLog')
-            const time = new Date().toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit', second:'2-digit'})
-            logEl.innerHTML += `<div class="mb-1">[${time}] ${message}</div>`
-            logEl.scrollTop = logEl.scrollHeight
-        }
+    report += `## 三、综合建议\n`;
+    report += `1. 重点关注${currentResults[0]?.swot.strengths[0] || '核心IP'}优势项目\n`;
+    report += `2. 警惕${currentResults[0]?.swot.threats[0] || '市场竞争'}风险因素\n`;
+    report += `3. 建议结合${Array.from(activeSources).slice(0,2).map(s => sourceNames[s]).join('与')}数据源进行深度分析\n`;
 
-        // 执行搜索
-        async function startSearch() {
-            const keyword = document.getElementById('keywordInput').value.trim()
-            if (!keyword) {
-                alert('请输入关键词！')
-                return
-            }
-            
-            // 显示结果区
-            document.getElementById('resultsSection').classList.remove('hidden')
-            document.getElementById('resultKeyword').innerHTML = `<span class="font-mono bg-yellow-200 px-3 py-1 rounded-xl">${keyword}</span>`
-            
-            // 清空日志
-            document.getElementById('crawlLog').innerHTML = ''
-            
-            // 模拟多平台爬虫过程
-            appendLog('🚀 启动分布式爬虫引擎...')
-            await sleep(600)
-            appendLog('🌐 抓取官网 & 政府文旅局公告...')
-            await sleep(450)
-            appendLog('📕 小红书笔记爬取完成（124条）')
-            await sleep(380)
-            appendLog('📱 抖音 / TikTok 短视频数据抓取（1.2万条）')
-            await sleep(520)
-            appendLog('💬 微信公众号 & 视频号文章解析...')
-            await sleep(410)
-            appendLog('✅ 全部平台数据聚合完成 • 开始AI研判')
-            
-            // 渲染所有 Tab 内容
-            renderAllTabs(keyword)
-            
-            // 生成分析报告
-            generateAnalysisReport(keyword)
-            
-            // 滚动到结果
-            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' })
-        }
+    reportContent.innerHTML = report.replace(/\n/g, '<br>');
+    currentReport = report;
+    
+    showToast('报告生成成功', 'success');
+}
 
-        function sleep(ms) {
-            return new Promise(resolve => setTimeout(resolve, ms))
-        }
+// 复制报告
+function copyReport() {
+    navigator.clipboard.writeText(currentReport).then(() => {
+        showToast('报告已复制到剪贴板', 'success');
+    });
+}
 
-        // 渲染所有 Tab
-        function renderAllTabs(keyword) {
-            const project = mockDatabase.defaultProject
-            const tabContentHTML = `
-                <!-- Tab 0: 项目区位 -->
-                <div id="content0" class="lg:col-span-12">
-                    <div class="result-card bg-white p-8 rounded-3xl border border-gray-100">
-                        <h3 class="text-xl font-semibold mb-6">📍 项目区位信息</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                            <div><span class="block text-sm text-gray-400">核心区位</span><span class="text-2xl font-medium">${project.location}</span></div>
-                            <div><span class="block text-sm text-gray-400">交通通达度</span><span class="text-2xl font-medium">4.8/5</span></div>
-                            <div><span class="block text-sm text-gray-400">政策支持</span><span class="text-2xl font-medium">国家级文旅示范区</span></div>
-                        </div>
-                        <div class="mt-8 text-sm bg-amber-50 border border-amber-200 p-5 rounded-2xl">
-                            爬取来源：泰国旅游局官网 • 中国文旅部 • Google Earth 卫星数据
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Tab 1: 投资商 -->
-                <div id="content1" class="hidden lg:col-span-12">
-                    <div class="result-card bg-white p-8 rounded-3xl border border-gray-100">
-                        <h3 class="text-xl font-semibold mb-6">💰 投资商信息</h3>
-                        <p class="text-3xl font-bold">${project.investor}</p>
-                        <div class="mt-8 grid grid-cols-3 gap-6">
-                            <div class="text-center border rounded-2xl py-6"><div class="text-xs text-gray-400">投资额</div><div class="text-4xl font-semibold">8.7亿USD</div></div>
-                            <div class="text-center border rounded-2xl py-6"><div class="text-xs text-gray-400">股权结构</div><div class="text-4xl font-semibold">45% : 35% : 20%</div></div>
-                            <div class="text-center border rounded-2xl py-6"><div class="text-xs text-gray-400">历史合作</div><div class="text-4xl font-semibold">12个项目</div></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Tab 2: 策划规划 -->
-                <div id="content2" class="hidden lg:col-span-12">
-                    <div class="result-card bg-white p-8 rounded-3xl border border-gray-100">
-                        <h3 class="text-xl font-semibold mb-6">🗺️ 策划规划</h3>
-                        <p class="text-lg">${project.planning}</p>
-                        <ul class="mt-8 space-y-4 text-sm">
-                            <li class="flex gap-3"><i class="fa-solid fa-check text-green-500 mt-1"></i>主题定位：文化沉浸式度假</li>
-                            <li class="flex gap-3"><i class="fa-solid fa-check text-green-500 mt-1"></i>核心产品：非遗体验馆 + 沉浸式夜游</li>
-                            <li class="flex gap-3"><i class="fa-solid fa-check text-green-500 mt-1"></i>可持续目标：碳中和认证</li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <!-- Tab 3: 设计建设 -->
-                <div id="content3" class="hidden lg:col-span-12">
-                    <div class="result-card bg-white p-8 rounded-3xl border border-gray-100">
-                        <h3 class="text-xl font-semibold mb-6">🏗️ 设计 & 建设</h3>
-                        <p class="text-lg">${project.design}</p>
-                        <p class="mt-6">${project.construction}</p>
-                    </div>
-                </div>
-                
-                <!-- Tab 4: 运营数据 -->
-                <div id="content4" class="hidden lg:col-span-12">
-                    <div class="result-card bg-white p-8 rounded-3xl border border-gray-100">
-                        <h3 class="text-xl font-semibold mb-6">📈 运营数据</h3>
-                        <p class="text-lg">${project.operation}</p>
-                        <div class="mt-8 h-64 bg-gray-100 rounded-2xl flex items-center justify-center text-gray-400">此处可嵌入Echarts / Plotly 实时运营曲线（实际部署可接入）</div>
-                    </div>
-                </div>
-                
-                <!-- Tab 5: 社交舆情 -->
-                <div id="content5" class="hidden lg:col-span-12">
-                    <div class="result-card bg-white p-8 rounded-3xl border border-gray-100">
-                        <h3 class="text-xl font-semibold mb-6">📱 社交媒体舆情</h3>
-                        <p class="text-lg">${project.socialSentiment}</p>
-                        <div class="mt-8 grid grid-cols-3 gap-6">
-                            <div class="text-center"><div class="text-5xl">12.4万</div><div class="text-xs text-red-500">小红书笔记</div></div>
-                            <div class="text-center"><div class="text-5xl">4.8亿</div><div class="text-xs text-pink-500">抖音播放量</div></div>
-                            <div class="text-center"><div class="text-5xl">87%</div><div class="text-xs text-emerald-500">正面评价</div></div>
-                        </div>
-                    </div>
-                </div>
-            `
-            document.getElementById('tabContent').innerHTML = tabContentHTML
-            // 默认显示第一个 Tab
-            switchTab(0)
-        }
+// 投喂NotebookLM
+function feedToNotebookLM() {
+    if (!currentReport) {
+        showToast('请先生成报告', 'warning');
+        return;
+    }
+    
+    const encoded = encodeURIComponent(currentReport);
+    const url = `https://notebooklm.google.com/?data=${encoded}`;
+    window.open(url, '_blank');
+    showToast('正在跳转至NotebookLM...', 'info');
+}
 
-        function switchTab(n) {
-            // 切换 Tab 按钮样式
-            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active', 'border-blue-600', 'text-blue-600'))
-            document.getElementById('tab' + n).classList.add('active', 'border-blue-600', 'text-blue-600')
-            
-            // 切换内容
-            for (let i = 0; i <= 5; i++) {
-                const el = document.getElementById('content' + i)
-                if (el) el.classList.toggle('hidden', i !== n)
-            }
-        }
+// Toast通知
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
+        <span>${message}</span>
+    `;
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
 
-        // 生成 AI 综合报告（Markdown 格式，完美适配 NotebookLM）
-        function generateAnalysisReport(keyword) {
-            const now = new Date()
-            const reportHTML = `
-                <h1>${keyword} 亚洲文旅项目 综合研判报告</h1>
-                <p><strong>生成时间：</strong>${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}</p>
-                <hr>
-                <h2>一、项目核心信息</h2>
-                <ul>
-                    <li><strong>区位</strong>：泰国普吉岛 / 中国海南三亚（根据关键词自动匹配）</li>
-                    <li><strong>投资商</strong>：万达集团 + 泰国中央集团 + 国际主权基金</li>
-                    <li><strong>总投资</strong>：约 8.7 亿 USD</li>
-                    <li><strong>预计开业</strong>：2027 年 Q2</li>
-                </ul>
-                
-                <h2>二、爬虫采集数据摘要</h2>
-                <p>共抓取 <strong>28 个来源</strong>，覆盖官网、小红书（124 篇）、微信公众号（37 篇）、抖音（1.2 万条短视频）。</p>
-                
-                <h2>三、投资运营研判</h2>
-                <p><strong>优势</strong>：区位政策红利显著 • 国际顶级设计团队 • 社交媒体热度高</p>
-                <p><strong>风险</strong>：地缘政治波动 • 建设周期长 • 运营初期现金流压力</p>
-                <p><strong>推荐指数</strong>：★★★★☆（强烈建议跟进）</p>
-                
-                <h2>四、建议</h2>
-                <p>1. 优先接触万达投资部<br>2. 准备《亚洲文旅项目尽调报告》提交 NotebookLM 继续深度对话<br>3. 关注 2026 年亚太文旅峰会</p>
-                
-                <p class="text-xs text-gray-400 mt-12">本报告由平台内置 AI 引擎生成 • 所有原始数据可一键导出 • 直接复制下方全部内容粘贴至 NotebookLM 即可创建新笔记</p>
-            `
-            document.getElementById('analysisReport').innerHTML = reportHTML
-            document.getElementById('reportTime').textContent = now.toLocaleString('zh-CN')
-        }
-
-        // 一键复制全部信息（结构化 Markdown）
-        function copyAllToClipboard() {
-            const allText = `# 亚洲文旅项目完整信息\n\n` +
-                `关键词：${document.getElementById('resultKeyword').innerText}\n\n` +
-                `## 项目区位\n${document.querySelector('#content0') ? document.querySelector('#content0').innerText : '模拟数据'}\n\n` +
-                `## 投资商\n${document.querySelector('#content1') ? document.querySelector('#content1').innerText : ''}\n\n` +
-                `## 策划规划\n${document.querySelector('#content2') ? document.querySelector('#content2').innerText : ''}\n\n` +
-                `## 设计建设\n${document.querySelector('#content3') ? document.querySelector('#content3').innerText : ''}\n\n` +
-                `## 运营数据\n${document.querySelector('#content4') ? document.querySelector('#content4').innerText : ''}\n\n` +
-                `## 社交舆情\n${document.querySelector('#content5') ? document.querySelector('#content5').innerText : ''}\n\n` +
-                `---\n` +
-                document.getElementById('analysisReport').innerText
-                
-            navigator.clipboard.writeText(allText).then(() => {
-                const btns = document.querySelectorAll('.copy-btn')
-                btns.forEach(b => {
-                    const original = b.innerHTML
-                    b.innerHTML = `✅ 已复制！`
-                    setTimeout(() => { b.innerHTML = original }, 2200)
-                })
-                alert('✅ 全部信息已复制到剪贴板！\n\n直接打开 NotebookLM（已提供上方入口）→ 新建笔记 → 粘贴即可！')
-            })
-        }
-
-        // 单独复制报告
-        function copyReportToClipboard() {
-            const reportText = document.getElementById('analysisReport').innerText
-            navigator.clipboard.writeText(reportText).then(() => {
-                alert('📄 综合研判报告已复制！\n\n请打开 NotebookLM 粘贴即可生成结构化笔记。')
-            })
-        }
-
-        // 导出完整 Markdown
-        function exportAllToMarkdown() {
-            const markdown = `# 亚洲文旅项目完整档案\n\n` + 
-                `生成时间：${new Date().toLocaleString('zh-CN')}\n\n` +
-                document.getElementById('analysisReport').innerText
-            const blob = new Blob([markdown], { type: 'text/markdown' })
-            const url = URL.createObjectURL(blob)
-            const a = document.createElement('a')
-            a.href = url
-            a.download = `亚洲文旅项目_${document.getElementById('resultKeyword').innerText}.md`
-            a.click()
-            URL.revokeObjectURL(url)
-        }
-
-        function showHelp() {
-            alert('✅ 使用说明\n\n1. 输入任意亚洲文旅关键词\n2. 点击“开始搜索 & 爬取”\n3. 平台模拟真实多平台爬虫（实际部署可无缝替换为 Puppeteer + 代理池）\n4. 所有结果支持一键复制 → NotebookLM\n5. 上方蓝色按钮直达 NotebookLM 官方入口\n\n生产环境建议：\n• 使用 Playwright 实现无头浏览器爬取抖音/小红书\n• 微信公众号通过公众号搜索 API\n• 所有数据自动存入本地 IndexedDB 或 Supabase')
-        }
-
-        // 初始化
-        window.onload = function() {
-            initTailwind()
-            console.log('%c✅ 亚洲文旅项目平台代码已完整加载！\n可直接复制保存为 index.html 打开使用', 'color:#3b82f6; font-size:13px')
-            // 自动聚焦输入框
-            document.getElementById('keywordInput').focus()
-        }
-    </script>
+// 初始化
+document.addEventListener('DOMContentLoaded', () => {
+    // 初始化统计数字
+    document.getElementById('statProjects').innerText = projects.length.toLocaleString();
+    document.getElementById('statSources').innerText = activeSources.size.toLocaleString();
+    document.getElementById('statReports').innerText = '0';
+    document.getElementById('statData').innerText = '12,847';
+    
+    // 添加粒子效果
+    const particles = document.getElementById('particles');
+    for (let i = 0; i < 30; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = `${Math.random() * 100}%`;
+        particle.style.top = `${Math.random() * 100}%`;
+        particle.style.setProperty('--dur', `${3 + Math.random() * 6}s`);
+        particle.style.setProperty('--delay', `${Math.random() * 5}s`);
+        particles.appendChild(particle);
+    }
+    
+    // 搜索框回车事件
+    document.getElementById('searchInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') startSearch();
+    });
+});
+</script>
 </body>
 </html>
+
